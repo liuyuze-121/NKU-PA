@@ -1,116 +1,96 @@
-#include "monitor/monitor.h"
-#include "monitor/expr.h"
-#include "monitor/watchpoint.h"
 #include "nemu.h"
-
+#include "cpu/reg.h"
 #include <stdlib.h>
-#include <readline/readline.h>
-#include <readline/history.h>
+#include <string.h>
 
-void cpu_exec(uint64_t);
+/* 简易命令行历史 */
+#define HISTORY_LEN 16
+static char *history[HISTORY_LEN] = {};
+static int hist_cnt = 0;
 
-/* We use the `readline' library to provide more flexibility to read from stdin. */
-char* rl_gets() {
-  static char *line_read = NULL;
-
-  if (line_read) {
-    free(line_read);
-    line_read = NULL;
-  }
-
-  line_read = readline("(nemu) ");
-
-  if (line_read && *line_read) {
-    add_history(line_read);
-  }
-
-  return line_read;
+/* 打印帮助信息 */
+static void cmd_help(char *args) {
+  printf("Welcome to NEMU! The following commands are available:\n");
+  printf("c - Continue the execution of the program\n");
+  printf("q - Quit NEMU\n");
+  printf("help - Display this information\n");
+  printf("si [N] - Step N instructions (default: 1)\n");
+  printf("info r - Print all registers\n");
+  printf("x N EXPR - Examine the memory at EXPR for N words\n");
+  printf("p EXPR - Print the value of EXPR\n");
 }
 
-static int cmd_c(char *args) {
-  cpu_exec(-1);
-  return 0;
+/* 打印所有寄存器 */
+static void cmd_info_r() {
+  printf("==================== Registers ====================\n");
+  printf("eax: 0x%08x\t\tecx: 0x%08x\n", cpu.eax, cpu.ecx);
+  printf("edx: 0x%08x\t\tebx: 0x%08x\n", cpu.edx, cpu.ebx);
+  printf("esp: 0x%08x\t\tebp: 0x%08x\n", cpu.esp, cpu.ebp);
+  printf("esi: 0x%08x\t\tedi: 0x%08x\n", cpu.esi, cpu.edi);
+  printf("eip: 0x%08x\n", cpu.eip);
+  printf("===================================================\n");
 }
 
-static int cmd_q(char *args) {
-  return -1;
-}
-
-static int cmd_help(char *args);
-
-static struct {
-  char *name;
-  char *description;
-  int (*handler) (char *);
-} cmd_table [] = {
-  { "help", "Display informations about all supported commands", cmd_help },
-  { "c", "Continue the execution of the program", cmd_c },
-  { "q", "Exit NEMU", cmd_q },
-
-  /* TODO: Add more commands */
-
-};
-
-#define NR_CMD (sizeof(cmd_table) / sizeof(cmd_table[0]))
-
-static int cmd_help(char *args) {
-  /* extract the first argument */
-  char *arg = strtok(NULL, " ");
-  int i;
-
-  if (arg == NULL) {
-    /* no argument given */
-    for (i = 0; i < NR_CMD; i ++) {
-      printf("%s - %s\n", cmd_table[i].name, cmd_table[i].description);
-    }
-  }
-  else {
-    for (i = 0; i < NR_CMD; i ++) {
-      if (strcmp(arg, cmd_table[i].name) == 0) {
-        printf("%s - %s\n", cmd_table[i].name, cmd_table[i].description);
-        return 0;
-      }
-    }
-    printf("Unknown command '%s'\n", arg);
-  }
-  return 0;
-}
-
-void ui_mainloop(int is_batch_mode) {
-  if (is_batch_mode) {
-    cmd_c(NULL);
+/* 处理 info 子命令 */
+static void cmd_info(char *args) {
+  if (args == NULL) {
+    printf("Please specify what to print. See 'help' for more information.\n");
     return;
   }
 
-  while (1) {
-    char *str = rl_gets();
-    char *str_end = str + strlen(str);
-
-    /* extract the first token as the command */
-    char *cmd = strtok(str, " ");
-    if (cmd == NULL) { continue; }
-
-    /* treat the remaining string as the arguments,
-     * which may need further parsing
-     */
-    char *args = cmd + strlen(cmd) + 1;
-    if (args >= str_end) {
-      args = NULL;
-    }
-
-#ifdef HAS_IOE
-    extern void sdl_clear_event_queue(void);
-    sdl_clear_event_queue();
-#endif
-
-    int i;
-    for (i = 0; i < NR_CMD; i ++) {
-      if (strcmp(cmd, cmd_table[i].name) == 0) {
-        if (cmd_table[i].handler(args) < 0) { return; }
-        break;
-      }
-    }
-
-    if (i == NR_CMD) { printf("Unknown command '%s'\n", cmd); }
+  char *subcmd = strtok(args, " ");
+  if (strcmp(subcmd, "r") == 0) {
+    cmd_info_r();
+  } else {
+    printf("Unknown subcommand: %s\n", subcmd);
   }
+}
+
+/* 主命令循环 */
+void ui_mainloop() {
+  printf("(nemu) ");
+  fflush(stdout);
+
+  char *buf = NULL;
+  size_t bufsize = 0;
+  ssize_t len;
+  while ((len = getline(&buf, &bufsize, stdin)) != -1) {
+    /* 去除末尾换行符 */
+    if (buf[len - 1] == '\n') {
+      buf[len - 1] = '\0';
+    }
+
+    /* 跳过空行 */
+    if (buf[0] == '\0') {
+      printf("(nemu) ");
+      fflush(stdout);
+      continue;
+    }
+
+    /* 保存命令历史 */
+    if (hist_cnt < HISTORY_LEN) {
+      history[hist_cnt] = strdup(buf);
+      hist_cnt++;
+    }
+
+    /* 解析命令 */
+    char *cmd = strtok(buf, " ");
+    char *args = strtok(NULL, "");
+
+    /* 执行命令 */
+    if (strcmp(cmd, "help") == 0) {
+      cmd_help(args);
+    } else if (strcmp(cmd, "q") == 0) {
+      break;
+    } else if (strcmp(cmd, "info") == 0) {
+      cmd_info(args);
+    } else {
+      printf("Unknown command: %s\n", cmd);
+    }
+
+    printf("(nemu) ");
+    fflush(stdout);
+  }
+
+  free(buf);
 }
