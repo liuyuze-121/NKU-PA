@@ -63,6 +63,36 @@ static void cmd_si(char *args) {
   // TODO: 这里后续会添加真正的CPU单步执行逻辑
 }
 
+/* 处理 x 内存查看命令 */
+static void cmd_x(char *args) {
+  if (args == NULL) {
+    printf("Usage: x N EXPR\n  Examine the memory at EXPR for N words.\n");
+    return;
+  }
+
+  // 解析第一个参数：查看的字数 N
+  char *n_str = strtok(args, " ");
+  if (n_str == NULL) {
+    printf("Usage: x N EXPR\n  Examine the memory at EXPR for N words.\n");
+    return;
+  }
+  int n = atoi(n_str);
+  if (n <= 0) {
+    printf("Error: N must be a positive integer.\n");
+    return;
+  }
+
+  // 解析第二个参数：地址表达式 EXPR
+  char *expr_str = strtok(NULL, "");
+  if (expr_str == NULL) {
+    printf("Usage: x N EXPR\n  Examine the memory at EXPR for N words.\n");
+    return;
+  }
+
+  printf("Examining memory: %d word(s) at address expression '%s'...\n", n, expr_str);
+  // TODO: 这里后续会添加真正的表达式求值和内存读取逻辑
+}
+
 /* 主命令循环 */
 void ui_mainloop() {
   printf("(nemu) ");
@@ -103,6 +133,8 @@ void ui_mainloop() {
       cmd_info(args);
     } else if (strcmp(cmd, "si") == 0) {
       cmd_si(args);
+    } else if (strcmp(cmd, "x") == 0) {
+      cmd_x(args);
     } else {
       printf("Unknown command: %s\n", cmd);
     }
