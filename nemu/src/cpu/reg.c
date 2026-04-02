@@ -7,20 +7,6 @@ CPU_state cpu;
 const char *regsl[] = {"eax", "ecx", "edx", "ebx", "esp", "ebp", "esi", "edi"};
 const char *regsw[] = {"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"};
 const char *regsb[] = {"al", "cl", "dl", "bl", "ah", "ch", "dh", "bh"};
-const char* reg_name(int index, int width) {
-  if (width == 4) {
-            return regsl[index];
-                
-  } else if (width == 2) {
-            return regsw[index];
-                
-  } else if (width == 1) {
-            return regsb[index];
-                
-  }
-      return "unknown";
-      
-}
 
 void reg_test() {
   srand(time(0));
