@@ -46,6 +46,23 @@ static void cmd_info(char *args) {
   }
 }
 
+/* 处理 si 单步执行命令 */
+static void cmd_si(char *args) {
+  int n = 1; // 默认单步执行1条指令
+  
+  // 如果有参数，解析参数
+  if (args != NULL) {
+    n = atoi(args);
+    if (n <= 0) {
+      printf("Error: argument must be a positive integer.\n");
+      return;
+    }
+  }
+
+  printf("Single stepping: %d instruction(s)...\n", n);
+  // TODO: 这里后续会添加真正的CPU单步执行逻辑
+}
+
 /* 主命令循环 */
 void ui_mainloop() {
   printf("(nemu) ");
@@ -84,6 +101,8 @@ void ui_mainloop() {
       break;
     } else if (strcmp(cmd, "info") == 0) {
       cmd_info(args);
+    } else if (strcmp(cmd, "si") == 0) {
+      cmd_si(args);
     } else {
       printf("Unknown command: %s\n", cmd);
     }
