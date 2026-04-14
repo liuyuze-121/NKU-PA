@@ -15,12 +15,11 @@ typedef struct {
       uint8_t _8[2];
     } gpr[8];
 
-    struct {
-      rtlreg_t eax, ecx, edx, ebx, esp, ebp, esi, edi;
-    };
+    rtlreg_t eax, ecx, edx, ebx, esp, ebp, esi, edi;
   };
 
   vaddr_t eip;
+
 } CPU_state;
 
 extern CPU_state cpu;
@@ -32,7 +31,7 @@ static inline int check_reg_index(int index) {
 
 #define reg_l(index) (cpu.gpr[check_reg_index(index)]._32)
 #define reg_w(index) (cpu.gpr[check_reg_index(index)]._16)
-#define reg_b(index) (cpu.gpr[check_reg_index(index) & 0x03]._8[(index) >> 2])
+#define reg_b(index) (cpu.gpr[check_reg_index(index) & 0x3]._8[index >> 2])
 
 extern const char* regsl[];
 extern const char* regsw[];
