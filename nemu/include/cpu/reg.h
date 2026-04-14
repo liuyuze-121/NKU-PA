@@ -10,9 +10,11 @@ enum { R_AL, R_CL, R_DL, R_BL, R_AH, R_CH, R_DH, R_BH };
 typedef struct {
   union {
     struct {
-      uint32_t _32;
-      uint16_t _16;
-      uint8_t _8[2];
+      union {
+        uint32_t _32;
+        uint16_t _16;
+        uint8_t _8[2];
+      };
     } gpr[8];
 
     struct {
@@ -28,7 +30,6 @@ typedef struct {
   };
 
   vaddr_t eip;
-
 } CPU_state;
 
 extern CPU_state cpu;
