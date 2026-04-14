@@ -14,18 +14,18 @@ typedef struct {
         uint32_t _32;
         uint16_t _16;
         uint8_t _8[2];
+      } gpr[8];
+      
+      struct {
+        uint32_t eax;
+        uint32_t ecx;
+        uint32_t edx;
+        uint32_t ebx;
+        uint32_t esp;
+        uint32_t ebp;
+        uint32_t esi;
+        uint32_t edi;
       };
-    } gpr[8];
-
-    struct {
-      uint32_t eax;
-      uint32_t ecx;
-      uint32_t edx;
-      uint32_t ebx;
-      uint32_t esp;
-      uint32_t ebp;
-      uint32_t esi;
-      uint32_t edi;
     };
   };
 
