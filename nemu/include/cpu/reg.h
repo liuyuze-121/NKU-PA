@@ -19,7 +19,6 @@ typedef struct {
   };
 
   vaddr_t eip;
-
 } CPU_state;
 
 extern CPU_state cpu;
@@ -39,7 +38,7 @@ extern const char* regsb[];
 
 static inline const char* reg_name(int index, int width) {
   assert(index >= 0 && index < 8);
-  switch(width) {
+  switch (width) {
     case 4: return regsl[index];
     case 1: return regsb[index];
     case 2: return regsw[index];
