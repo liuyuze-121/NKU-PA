@@ -25,7 +25,7 @@ void reg_test() {
   assert(reg_b(R_AH) == ((sample[R_EAX] >> 8) & 0xff));
   assert(reg_b(R_BL) == (sample[R_EBX] & 0xff));
   assert(reg_b(R_BH) == ((sample[R_EBX] >> 8) & 0xff));
-  assert(reg_b(R_CL) == (sample[R_ECX] & 0xff));
+  assert(reg_b(R_CL) == (sample[R_EAX] & 0xff));
   assert(reg_b(R_CH) == ((sample[R_ECX] >> 8) & 0xff));
   assert(reg_b(R_DL) == (sample[R_EDX] & 0xff));
   assert(reg_b(R_DH) == ((sample[R_EDX] >> 8) & 0xff));
