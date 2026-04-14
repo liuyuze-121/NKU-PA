@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>
+#include <stdbool.h>
 
 /* 监视点配置 (PA1 核心功能) */
 #define MAX_WATCHPOINT 16
@@ -39,7 +41,7 @@ static int parse_reg() {
   if (!strncmp(expr_str, "ecx", 3)) { expr_str += 3; return cpu.ecx; }
   if (!strncmp(expr_str, "edx", 3)) { expr_str += 3; return cpu.edx; }
   if (!strncmp(expr_str, "ebx", 3)) { expr_str += 3; return cpu.ebx; }
-  if (!strncmp(expr_str, "esp", 3)) { expr_str += 3; return cpu.esp; }
+  if (!strncmp(expr_str, "esp", 4)) { expr_str += 3; return cpu.esp; }
   if (!strncmp(expr_str, "ebp", 3)) { expr_str += 3; return cpu.ebp; }
   if (!strncmp(expr_str, "esi", 3)) { expr_str += 3; return cpu.esi; }
   if (!strncmp(expr_str, "edi", 3)) { expr_str += 3; return cpu.edi; }
