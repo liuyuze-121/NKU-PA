@@ -128,14 +128,29 @@ static void cmd_si(char *args) {
   printf("Single stepping %d instruction(s)...\n", n);
 }
 
-/* x内存查看命令处理函数（框架） */
+/* x命令：真实内存查看功能 */
 static void cmd_x(char *args) {
-  if (args == NULL) { printf("Usage: x N EXPR\n"); return; }
+  if (args == NULL) {
+    printf("Usage: x N EXPR\n  Examine N 32-bit words from memory address EXPR\n");
+    return;
+  }
+
   char *n_str = strtok(args, " ");
   int n = atoi(n_str);
-  if (n <= 0) { printf("Error: N must be positive\n"); return; }
-  char *expr = strtok(NULL, "");
-  printf("Examining %d words at %s...\n", n, expr);
+  if (n <= 0) {
+    printf("Error: N must be a positive integer\n");
+    return;
+  }
+
+  char *addr_expr = strtok(NULL, "");
+  uint32_t addr = eval(addr_expr);
+
+  printf("Memory examine: %d words from 0x%08x\n", n, addr);
+  printf("Address\t\tValue\n");
+  for (int i = 0; i < n; i++) {
+    uint32_t val = vaddr_read(addr + i * 4, 4);
+    printf("0x%08x\t0x%08x\n", addr + i * 4, val);
+  }
 }
 
 /* p命令：真实表达式求值 */
