@@ -8,17 +8,23 @@ enum { R_AX, R_CX, R_DX, R_BX, R_SP, R_BP, R_SI, R_DI };
 enum { R_AL, R_CL, R_DL, R_BL, R_AH, R_CH, R_DH, R_BH };
 
 typedef struct {
+  // 仅添加这一层匿名联合体，让gpr和独立寄存器共享内存
   union {
     struct {
-      union {
-        uint32_t _32;
-        uint16_t _16;
-        uint8_t _8[2];
-      };
+      uint32_t _32;
+      uint16_t _16;
+      uint8_t _8[2];
     } gpr[8];
 
     struct {
-      rtlreg_t eax, ecx, edx, ebx, esp, ebp, esi, edi;
+      rtlreg_t eax;
+      rtlreg_t ecx;
+      rtlreg_t edx;
+      rtlreg_t ebx;
+      rtlreg_t esp;
+      rtlreg_t ebp;
+      rtlreg_t esi;
+      rtlreg_t edi;
     };
   };
 
@@ -35,7 +41,7 @@ static inline int check_reg_index(int index) {
 
 #define reg_l(index) (cpu.gpr[check_reg_index(index)]._32)
 #define reg_w(index) (cpu.gpr[check_reg_index(index)]._16)
-#define reg_b(index) (cpu.gpr[check_reg_index(index) & 0x03]._8[(index) >> 2])
+#define reg_b(index) (cpu.gpr[(index) & 0x3]._8[(index) >> 2])
 
 extern const char* regsl[];
 extern const char* regsw[];
