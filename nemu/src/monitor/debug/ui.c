@@ -16,11 +16,11 @@ static void cmd_help(char *args) {
   printf("help - Display this help information\n");
   printf("si [N] - Step N instructions (default: 1)\n");
   printf("info r - Print all registers and EIP\n");
-  printf("x N EXPR - Examine N words of memory at address calculated by EXPR\n");
+  printf("x N EXPR - Examine N words of memory at address EXPR.\n");
   printf("p EXPR - Print the value of expression EXPR\n");
 }
 
-/* 连续执行命令（安全无报错版） */
+/* 连续执行命令（框架版） */
 static void cmd_c(char *args) {
   printf("Continuing program execution...\n");
 }
@@ -51,7 +51,7 @@ static void cmd_info(char *args) {
   }
 }
 
-/* si单步执行命令处理函数（框架） */
+/* si单步执行命令（框架版） */
 static void cmd_si(char *args) {
   int n = 1;
   if (args != NULL) {
@@ -61,7 +61,7 @@ static void cmd_si(char *args) {
       return;
     }
   }
-  printf("Single stepping: %d instruction(s)...\n", n);
+  printf("Single stepping %d instruction(s)...\n", n);
 }
 
 /* x内存查看命令处理函数（框架） */
