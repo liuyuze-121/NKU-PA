@@ -15,15 +15,15 @@ enum { R_AL, R_CL, R_DL, R_BL, R_AH, R_CH, R_DH, R_BH };
  */
 
 typedef struct {
+  // 第一层union：gpr数组 和 8个寄存器 共享内存
   union {
-    // 1. 单个寄存器：union 实现32/16/8位共享内存（修复断言的核心！）
+    // 第二层union：单个寄存器的32/16/8位 共享内存
     union {
       uint32_t _32;
       uint16_t _16;
       uint8_t _8[2];
     } gpr[8];
 
-    // 2. gpr 数组和寄存器别名共享内存（修复编译的核心！）
     rtlreg_t eax, ecx, edx, ebx, esp, ebp, esi, edi;
   };
 
