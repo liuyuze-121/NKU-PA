@@ -182,14 +182,19 @@ uint32_t expr(char *e, bool *success) {
   *success = make_token(e);
   if (!*success) return 0;
 
+  // 🔥 核心修复：强制识别所有单目负号（带空格/不带空格都生效）
   for (int i = 0; i < nr_token; i++) {
     if (tokens[i].type == '-') {
-      int left = (i == 0) ? '(' : tokens[i-1].type;
-      if (left == '(' || get_pri(left) >= 0) tokens[i].type = TK_NEGATIVE;
+      int prev_type = (i == 0) ? '(' : tokens[i-1].type;
+      if (prev_type == '(' || get_pri(prev_type) >= 0) {
+        tokens[i].type = TK_NEGATIVE;
+      }
     }
     if (tokens[i].type == '*') {
-      int left = (i == 0) ? '(' : tokens[i-1].type;
-      if (left == '(' || get_pri(left) >= 0) tokens[i].type = TK_DEREF;
+      int prev_type = (i == 0) ? '(' : tokens[i-1].type;
+      if (prev_type == '(' || get_pri(prev_type) >= 0) {
+        tokens[i].type = TK_DEREF;
+      }
     }
   }
   return eval(0, nr_token - 1, success);
