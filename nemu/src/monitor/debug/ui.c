@@ -11,7 +11,7 @@ void cpu_exec(uint64_t);
 
 char* rl_gets() {
   static char *line_read = NULL;
-  if (line_read) { free(line_read); line_read = NULL; }
+  line_read = NULL;
   line_read = readline("(nemu) ");
   if (line_read && *line_read) add_history(line_read);
   return line_read;
@@ -60,7 +60,6 @@ static int cmd_x(char *args) {
   return 0;
 }
 
-// 统一输出 32位十六进制 (标准格式)
 static int cmd_p(char *args) {
   if (!args) { printf("error in expr()\n"); return 0; }
   bool success;
@@ -110,6 +109,5 @@ void ui_mainloop(int is_batch_mode) {
       }
     }
     if (i == NR_CMD) printf("Unknown command\n");
-    free(str);
   }
 }
