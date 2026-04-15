@@ -15,10 +15,21 @@ typedef struct {
       uint8_t _8[2];
     } gpr[8];
 
-    rtlreg_t eax, ecx, edx, ebx, esp, ebp, esi, edi;
+    struct {
+      rtlreg_t eax, ecx, edx, ebx, esp, ebp, esi, edi;
+    };
+
+    struct {
+      uint16_t ax, cx, dx, bx, sp, bp, si, di;
+    };
+
+    struct {
+      uint8_t al, ah, cl, ch, dl, dh, bl, bh;
+    };
   };
 
   vaddr_t eip;
+
 } CPU_state;
 
 extern CPU_state cpu;
