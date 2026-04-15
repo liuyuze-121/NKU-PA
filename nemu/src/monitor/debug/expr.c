@@ -108,28 +108,43 @@ static int get_pri(int op) {
   }
 }
 
+// ====================== 🔥 终极修复：主运算符查找 ======================
 static int find_dominant_op(int p, int q) {
   int cnt = 0;
+  int min_pri = 100, pos = -1;
+  
+  // 1. 先找双目运算符（+ - * / 等），忽略单目运算符
   for (int i = p; i <= q; i++) {
     if (tokens[i].type == '(') cnt++;
     if (tokens[i].type == ')') cnt--;
     if (cnt != 0) continue;
-    if (tokens[i].type == TK_DEREF || tokens[i].type == TK_NEGATIVE || tokens[i].type == '!') {
-      return i;
+
+    int t = tokens[i].type;
+    // 跳过单目运算符，只找双目
+    if (t == TK_NEGATIVE || t == TK_DEREF || t == '!') continue;
+    
+    int pri = get_pri(t);
+    if (pri < 0) continue;
+    if (pri <= min_pri) {
+      min_pri = pri;
+      pos = i;
     }
   }
-  cnt = 0;
-  int min_pri = 100, pos = -1;
-  for (int i = p; i <= q; i++) {
-    if (tokens[i].type == '(') cnt++;
-    if (tokens[i].type == ')') cnt--;
-    if (cnt != 0) continue;
-    int pri = get_pri(tokens[i].type);
-    if (pri < 0) continue;
-    if (pri <= min_pri) { min_pri = pri; pos = i; }
+
+  // 2. 如果没找到双目运算符，说明是纯单目运算（--1、!0、*addr）
+  if (pos == -1) {
+    for (int i = p; i <= q; i++) {
+      if (tokens[i].type == '(') cnt++;
+      if (tokens[i].type == ')') cnt--;
+      if (cnt != 0) continue;
+      if (tokens[i].type == TK_NEGATIVE || tokens[i].type == TK_DEREF || tokens[i].type == '!') {
+        return i;
+      }
+    }
   }
   return pos;
 }
+// ====================================================================
 
 static uint32_t eval(int p, int q, bool *success) {
   if (!*success || p > q) { *success = false; return 0; }
@@ -182,7 +197,6 @@ uint32_t expr(char *e, bool *success) {
   *success = make_token(e);
   if (!*success) return 0;
 
-  // 🔥 核心修复：强制识别所有单目负号（带空格/不带空格都生效）
   for (int i = 0; i < nr_token; i++) {
     if (tokens[i].type == '-') {
       int prev_type = (i == 0) ? '(' : tokens[i-1].type;
