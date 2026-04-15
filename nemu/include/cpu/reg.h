@@ -15,16 +15,12 @@ typedef struct {
       uint8_t _8[2];
     } gpr[8];
 
+    /* Do NOT change the order of the GPRs' definitions. */
+    /* In NEMU, rtlreg_t is exactly uint32_t. This makes RTL instructions
+     * in PA2 able to directly access these registers.
+     */
     struct {
       rtlreg_t eax, ecx, edx, ebx, esp, ebp, esi, edi;
-    };
-
-    struct {
-      uint16_t ax, cx, dx, bx, sp, bp, si, di;
-    };
-
-    struct {
-      uint8_t al, ah, cl, ch, dl, dh, bl, bh;
     };
   };
 
