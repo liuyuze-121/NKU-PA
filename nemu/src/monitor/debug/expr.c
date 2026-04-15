@@ -108,19 +108,19 @@ static int get_pri(int op) {
   }
 }
 
-// ====================== 🔥 终极修复：主运算符查找 ======================
+
 static int find_dominant_op(int p, int q) {
   int cnt = 0;
   int min_pri = 100, pos = -1;
   
-  // 1. 先找双目运算符（+ - * / 等），忽略单目运算符
+  
   for (int i = p; i <= q; i++) {
     if (tokens[i].type == '(') cnt++;
     if (tokens[i].type == ')') cnt--;
     if (cnt != 0) continue;
 
     int t = tokens[i].type;
-    // 跳过单目运算符，只找双目
+    
     if (t == TK_NEGATIVE || t == TK_DEREF || t == '!') continue;
     
     int pri = get_pri(t);
@@ -131,7 +131,7 @@ static int find_dominant_op(int p, int q) {
     }
   }
 
-  // 2. 如果没找到双目运算符，说明是纯单目运算（--1、!0、*addr）
+  
   if (pos == -1) {
     for (int i = p; i <= q; i++) {
       if (tokens[i].type == '(') cnt++;
@@ -144,7 +144,7 @@ static int find_dominant_op(int p, int q) {
   }
   return pos;
 }
-// ====================================================================
+
 
 static uint32_t eval(int p, int q, bool *success) {
   if (!*success || p > q) { *success = false; return 0; }
