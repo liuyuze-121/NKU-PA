@@ -9,7 +9,6 @@
 
 void cpu_exec(uint64_t);
 
-/* We use the `readline' library to provide more flexibility to read from stdin. */
 char* rl_gets() {
   static char *line_read = NULL;
 
@@ -77,7 +76,6 @@ static int cmd_info(char *args) {
   return 0;
 }
 
-// 1:1匹配第一张截图，修正strtok错误与错误提示笔误
 static int cmd_x(char *args) {
   if(!args){
       printf("args error in cmd_x\n");
@@ -113,14 +111,14 @@ static int cmd_x(char *args) {
   return 0;
 }
 
-// 1:1匹配第二张截图，添加cmd_p函数
+// 修复：无符号类型匹配 + 无符号打印
 static int cmd_p(char *args) {
   bool success;
-  int res=expr(args,&success);
+  uint32_t res=expr(args,&success);
   if(success==false)
       printf("error in expr()\n");
   else
-      printf("the value of expr is:%d\n",res);
+      printf("the value of expr is:%u\n",res);
   return 0;
 }
 
@@ -143,12 +141,10 @@ static struct {
 #define NR_CMD (sizeof(cmd_table) / sizeof(cmd_table[0]))
 
 static int cmd_help(char *args) {
-  /* extract the first argument */
   char *arg = strtok(NULL, " ");
   int i;
 
   if (arg == NULL) {
-    /* no argument given */
     for (i = 0; i < NR_CMD; i ++) {
       printf("%s - %s\n", cmd_table[i].name, cmd_table[i].description);
     }
@@ -175,13 +171,9 @@ void ui_mainloop(int is_batch_mode) {
     char *str = rl_gets();
     char *str_end = str + strlen(str);
 
-    /* extract the first token as the command */
     char *cmd = strtok(str, " ");
     if (cmd == NULL) { continue; }
 
-    /* treat the remaining string as the arguments,
-     * which may need further parsing
-     */
     char *args = cmd + strlen(cmd) + 1;
     if (args >= str_end) {
       args = NULL;

@@ -90,12 +90,10 @@ static bool make_token(char *e) {
             tokens[nr_token].str[len] = '\0';
             break;
           case TK_REG:
-            // 去掉开头的$，保存寄存器名
             strncpy(tokens[nr_token].str, e + pos + 1, len - 1);
             tokens[nr_token].str[len - 1] = '\0';
             break;
           default:
-            // 运算符/括号不需要保存字符串
             tokens[nr_token].str[0] = '\0';
             break;
         }
@@ -201,7 +199,6 @@ static uint32_t eval(int p, int q, bool *success) {
     return 0;
   }
   int t = tokens[op].type;
-  // 处理单目运算符
   if (t == TK_NEGATIVE) {
     uint32_t v = eval(op + 1, q, success);
     return -v;
@@ -214,7 +211,6 @@ static uint32_t eval(int p, int q, bool *success) {
     uint32_t v = eval(op + 1, q, success);
     return !v;
   }
-  // 处理双目运算符
   uint32_t l = eval(p, op - 1, success);
   uint32_t r = eval(op + 1, q, success);
   switch (t) {
@@ -239,15 +235,14 @@ uint32_t expr(char *e, bool *success) {
   int i;
   for (i = 0; i < nr_token; i++) {
     int t = tokens[i].type;
-    // 区分单目负号和双目减号
+    // 修复：支持连续负号、括号后负号
     if (t == '-') {
-      if (i == 0 || get_pri(tokens[i-1].type) >= 0) {
+      if (i == 0 || tokens[i-1].type == '(' || get_pri(tokens[i-1].type) >= 0) {
         tokens[i].type = TK_NEGATIVE;
       }
     }
-    // 区分单目解引用*和双目乘号
     if (t == '*') {
-      if (i == 0 || get_pri(tokens[i-1].type) >= 0) {
+      if (i == 0 || tokens[i-1].type == '(' || get_pri(tokens[i-1].type) >= 0) {
         tokens[i].type = TK_DEREF;
       }
     }
