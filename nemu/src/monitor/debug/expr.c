@@ -87,7 +87,7 @@ static bool check_parentheses(int p, int q) {
 
 static int get_pri(int op) {
   switch(op) {
-    case TK_NEGATIVE: case TK_DEREF: case '!': return 4;
+    case TK_NEGATIVE: case TK_DEREF: case '!': return 4; // 单目运算符最高优先级
     case '*': case '/': return 3;
     case '+': case '-': return 2;
     case TK_EQ: case TK_NEQ: return 1;
@@ -96,8 +96,22 @@ static int get_pri(int op) {
   }
 }
 
+// 核心修复：优先查找单目运算符
 static int find_dominant_op(int p, int q) {
-  int cnt = 0, min_pri = 100, pos = -1;
+  int cnt = 0;
+  // 第一步：优先找单目负号/解引用/逻辑非
+  for (int i = p; i <= q; i++) {
+    if (tokens[i].type == '(') cnt++;
+    if (tokens[i].type == ')') cnt--;
+    if (cnt != 0) continue;
+    if (tokens[i].type == TK_NEGATIVE || tokens[i].type == TK_DEREF || tokens[i].type == '!') {
+      return i;
+    }
+  }
+
+  // 第二步：找双目运算符
+  cnt = 0;
+  int min_pri = 100, pos = -1;
   for (int i = p; i <= q; i++) {
     int t = tokens[i].type;
     if (t == '(') cnt++; else if (t == ')') cnt--;
@@ -151,14 +165,19 @@ static uint32_t eval(int p, int q, bool *success) {
 uint32_t expr(char *e, bool *success) {
   *success = true;
   if (!make_token(e)) { *success = false; return 0; }
+
+  // 核心修复：强制标记所有连续单目负号
   for (int i=0; i<nr_token; i++) {
     if (tokens[i].type == '-') {
-      if (i==0 || tokens[i-1].type=='(' || get_pri(tokens[i-1].type)>=0)
+      // 满足任意条件：开头 / 左括号 / 前一个是运算符 → 标记为单目负号
+      if (i == 0 || tokens[i-1].type == '(' || get_pri(tokens[i-1].type) != -2) {
         tokens[i].type = TK_NEGATIVE;
+      }
     }
     if (tokens[i].type == '*') {
-      if (i==0 || tokens[i-1].type=='(' || get_pri(tokens[i-1].type)>=0)
+      if (i == 0 || tokens[i-1].type == '(' || get_pri(tokens[i-1].type) != -2) {
         tokens[i].type = TK_DEREF;
+      }
     }
   }
   return eval(0, nr_token-1, success);
