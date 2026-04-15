@@ -141,25 +141,20 @@ static int get_pri(int op) {
 }
 
 static int find_dominant_op(int p, int q) {
-  int pri = 100;
-  int pos = -1;
   int cnt = 0;
-  int i;
-  for (i = p; i <= q; i++) {
-    int t = tokens[i].type;
-    if (t == '(') cnt++;
-    else if (t == ')') cnt--;
+  int pos = -1;
+  int min_pri = 100;
+  
+  for (int i = p; i <= q; i++) {
+    if (tokens[i].type == '(') cnt++;
+    if (tokens[i].type == ')') cnt--;
     if (cnt != 0) continue;
-    
-    
-    if(t == TK_NEGATIVE || t == TK_DEREF || t == '!'){
-      return i;
-    }
 
-    int cp = get_pri(t);
-    if (cp < 0) continue;
-    if (cp <= pri) {
-      pri = cp;
+    int pri = get_pri(tokens[i].type);
+    if (pri < 0) continue;
+
+    if (pri <= min_pri) {
+      min_pri = pri;
       pos = i;
     }
   }
@@ -168,58 +163,41 @@ static int find_dominant_op(int p, int q) {
 
 static uint32_t eval(int p, int q, bool *success) {
   if (!*success) return 0;
-  if (p > q) {
-    *success = false;
-    return 0;
-  }
+  if (p > q) { *success = false; return 0; }
+
   if (p == q) {
     uint32_t v = 0;
-    if (tokens[p].type == TK_NUMBER) {
-      v = atoi(tokens[p].str);
-    } else if (tokens[p].type == TK_HEX) {
-      sscanf(tokens[p].str, "%x", &v);
-    } else if (tokens[p].type == TK_REG) {
+    if (tokens[p].type == TK_NUMBER) v = atoi(tokens[p].str);
+    else if (tokens[p].type == TK_HEX) sscanf(tokens[p].str, "%x", &v);
+    else if (tokens[p].type == TK_REG) {
       char *s = tokens[p].str;
-      if (strcmp(s, "eip") == 0) return cpu.eip;
-      int i;
-      for (i = 0; i < 8; i++) {
-        if (strcmp(s, regsl[i]) == 0) return reg_l(i);
-        if (strcmp(s, regsw[i]) == 0) return reg_w(i);
-        if (strcmp(s, regsb[i]) == 0) return reg_b(i);
+      if (!strcmp(s, "eip")) return cpu.eip;
+      for (int i=0;i<8;i++) {
+        if (!strcmp(s, regsl[i])) return reg_l(i);
+        if (!strcmp(s, regsw[i])) return reg_w(i);
+        if (!strcmp(s, regsb[i])) return reg_b(i);
       }
-      *success = false;
-      return 0;
-    } else {
       *success = false;
     }
     return v;
   }
-  if (check_parentheses(p, q)) {
-    return eval(p + 1, q - 1, success);
-  }
+
+  if (check_parentheses(p, q)) return eval(p+1, q-1, success);
   int op = find_dominant_op(p, q);
-  if (op < 0) {
-    *success = false;
-    return 0;
-  }
-  int t = tokens[op].type;
+  if (op < 0) { *success = false; return 0; }
 
-  if (t == TK_NEGATIVE) {
-    uint32_t v = eval(op + 1, q, success);
-    return 0 - v;
+  // 单目运算符
+  if (tokens[op].type == TK_NEGATIVE) {
+    uint32_t val = eval(op+1, q, success);
+    return 0 - val;
   }
-  if (t == TK_DEREF) {
-    uint32_t addr = eval(op + 1, q, success);
-    return vaddr_read(addr, 4);
-  }
-  if (t == '!') {
-    uint32_t v = eval(op + 1, q, success);
-    return !v;
-  }
+  if (tokens[op].type == TK_DEREF) return vaddr_read(eval(op+1,q,success),4);
+  if (tokens[op].type == '!') return !eval(op+1,q,success);
 
-  uint32_t l = eval(p, op - 1, success);
-  uint32_t r = eval(op + 1, q, success);
-  switch (t) {
+  // 双目运算符
+  uint32_t l = eval(p, op-1, success);
+  uint32_t r = eval(op+1, q, success);
+  switch(tokens[op].type) {
     case '+': return l + r;
     case '-': return l - r;
     case '*': return l * r;
@@ -234,27 +212,20 @@ static uint32_t eval(int p, int q, bool *success) {
 
 uint32_t expr(char *e, bool *success) {
   *success = true;
-  if (!make_token(e)) {
-    *success = false;
-    return 0;
-  }
+  if (!make_token(e)) { *success = false; return 0; }
 
-  
-  for (int i = 0; i < nr_token; i++) {
+  // 标记单目负号/解引用
+  for (int i=0; i<nr_token; i++) {
     if (tokens[i].type == '-') {
-      if( i == 0 || 
-          tokens[i-1].type == '(' || 
-          get_pri(tokens[i-1].type) != -2)  
-      {
+      if (i==0 || tokens[i-1].type == '(' || get_pri(tokens[i-1].type)>=0) {
         tokens[i].type = TK_NEGATIVE;
       }
     }
     if (tokens[i].type == '*') {
-      if( i == 0 || tokens[i-1].type == '(' || get_pri(tokens[i-1].type) != -2){
+      if (i==0 || tokens[i-1].type == '(' || get_pri(tokens[i-1].type)>=0) {
         tokens[i].type = TK_DEREF;
       }
     }
   }
-
-  return eval(0, nr_token - 1, success);
+  return eval(0, nr_token-1, success);
 }
