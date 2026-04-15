@@ -26,7 +26,15 @@ static struct rule {
   {" +", TK_NOTYPE},
   {"0x[0-9A-Fa-f]+", TK_HEX},
   {"[0-9]+", TK_NUMBER},
-  {"\\$(eax|ecx|edx|ebx|esp|ebp|esi|edi|eip|ax|cx|dx|bx|sp|bp|si|di|al|cl|dl|bl|ah|ch|dh|bh)", TK_REG},
+  {"\\$eip", TK_REG},
+  {"\\$eax", TK_REG},
+  {"\\$ecx", TK_REG},
+  {"\\$edx", TK_REG},
+  {"\\$ebx", TK_REG},
+  {"\\$esp", TK_REG},
+  {"\\$ebp", TK_REG},
+  {"\\$esi", TK_REG},
+  {"\\$edi", TK_REG},
   {"==", TK_EQ},
   {"!=", TK_NEQ},
   {"&&", TK_AND},
@@ -37,7 +45,7 @@ static struct rule {
   {"\\*", '*'},
   {"\\/", '/'},
   {"\\(", '('},
-  {")", ')'}
+  {"\\)", ')'}
 };
 
 #define NR_REGEX (sizeof(rules) / sizeof(rules[0]))
@@ -59,16 +67,18 @@ static bool make_token(char *e) {
   int pos = 0;
   regmatch_t pm;
   nr_token = 0;
-  while (e[pos]) {
+  while (e[pos] != '\0') {
     int i;
     for (i = 0; i < NR_REGEX; i++) {
-      if (regexec(&re[i], e+pos, 1, &pm, 0) == 0 && pm.rm_so == 0) {
+      if (regexec(&re[i], e + pos, 1, &pm, 0) == 0 && pm.rm_so == 0) {
         int len = pm.rm_eo;
         if (rules[i].token_type == TK_NOTYPE) { pos += len; break; }
         tokens[nr_token].type = rules[i].token_type;
-        strncpy(tokens[nr_token].str, e+pos, len);
-        tokens[nr_token].str[len] = 0;
-        nr_token++; pos += len; break;
+        strncpy(tokens[nr_token].str, e + pos, len);
+        tokens[nr_token].str[len] = '\0';
+        nr_token++;
+        pos += len;
+        break;
       }
     }
     if (i == NR_REGEX) return false;
@@ -79,7 +89,7 @@ static bool make_token(char *e) {
 static bool check_parentheses(int p, int q) {
   if (tokens[p].type != '(' || tokens[q].type != ')') return false;
   int cnt = 0;
-  for (int i=p; i<=q; i++) {
+  for (int i = p; i <= q; i++) {
     if (tokens[i].type == '(') cnt++;
     if (tokens[i].type == ')') cnt--;
     if (cnt < 0) return false;
@@ -89,7 +99,7 @@ static bool check_parentheses(int p, int q) {
 
 static int get_pri(int op) {
   switch(op) {
-    case TK_NEGATIVE: case TK_DEREF: case '!': return 4;
+    case TK_DEREF: case TK_NEGATIVE: case '!': return 4;
     case '*': case '/': return 3;
     case '+': case '-': return 2;
     case TK_EQ: case TK_NEQ: return 1;
@@ -100,15 +110,17 @@ static int get_pri(int op) {
 
 static int find_dominant_op(int p, int q) {
   int cnt = 0;
-  for (int i=p; i<=q; i++) {
+  for (int i = p; i <= q; i++) {
     if (tokens[i].type == '(') cnt++;
     if (tokens[i].type == ')') cnt--;
     if (cnt != 0) continue;
-    if (tokens[i].type == TK_NEGATIVE || tokens[i].type == TK_DEREF || tokens[i].type == '!') return i;
+    if (tokens[i].type == TK_DEREF || tokens[i].type == TK_NEGATIVE || tokens[i].type == '!') {
+      return i;
+    }
   }
   cnt = 0;
   int min_pri = 100, pos = -1;
-  for (int i=p; i<=q; i++) {
+  for (int i = p; i <= q; i++) {
     if (tokens[i].type == '(') cnt++;
     if (tokens[i].type == ')') cnt--;
     if (cnt != 0) continue;
@@ -120,35 +132,48 @@ static int find_dominant_op(int p, int q) {
 }
 
 static uint32_t eval(int p, int q, bool *success) {
-  if (!*success || p>q) { *success = false; return 0; }
+  if (!*success || p > q) { *success = false; return 0; }
   if (p == q) {
-    if (tokens[p].type == TK_NUMBER) return atoi(tokens[p].str);
-    if (tokens[p].type == TK_HEX) { uint32_t v; sscanf(tokens[p].str, "%x", &v); return v; }
-    if (tokens[p].type == TK_REG) {
-      if (!strcmp(tokens[p].str, "eip")) return cpu.eip;
-      for(int i=0; i<8; i++) {
-        if (!strcmp(tokens[p].str, regsl[i])) return reg_l(i);
-        if (!strcmp(tokens[p].str, regsw[i])) return reg_w(i);
-        if (!strcmp(tokens[p].str, regsb[i])) return reg_b(i);
+    switch (tokens[p].type) {
+      case TK_NUMBER: return atoi(tokens[p].str);
+      case TK_HEX: { uint32_t v; sscanf(tokens[p].str, "%x", &v); return v; }
+      case TK_REG: {
+        if (!strcmp(tokens[p].str, "$eip")) return cpu.eip;
+        if (!strcmp(tokens[p].str, "$eax")) return reg_l(0);
+        if (!strcmp(tokens[p].str, "$ecx")) return reg_l(1);
+        if (!strcmp(tokens[p].str, "$edx")) return reg_l(2);
+        if (!strcmp(tokens[p].str, "$ebx")) return reg_l(3);
+        if (!strcmp(tokens[p].str, "$esp")) return reg_l(4);
+        if (!strcmp(tokens[p].str, "$ebp")) return reg_l(5);
+        if (!strcmp(tokens[p].str, "$esi")) return reg_l(6);
+        if (!strcmp(tokens[p].str, "$edi")) return reg_l(7);
+        *success = false; return 0;
       }
+      default: *success = false; return 0;
     }
-    *success = false; return 0;
   }
-  if (check_parentheses(p,q)) return eval(p+1,q-1,success);
-  int op = find_dominant_op(p,q);
+  if (check_parentheses(p, q)) return eval(p+1, q-1, success);
+  int op = find_dominant_op(p, q);
   if (op == -1) { *success = false; return 0; }
 
   if (tokens[op].type == TK_NEGATIVE) return 0 - eval(op+1, q, success);
-  if (tokens[op].type == TK_DEREF) return vaddr_read(eval(op+1,q,success),4);
-  if (tokens[op].type == '!') return !eval(op+1,q,success);
+  if (tokens[op].type == TK_DEREF) {
+    uint32_t addr = eval(op+1, q, success);
+    return vaddr_read(addr, 4);
+  }
+  if (tokens[op].type == '!') return !eval(op+1, q, success);
 
   uint32_t l = eval(p, op-1, success);
   uint32_t r = eval(op+1, q, success);
   switch(tokens[op].type) {
-    case '+': return l+r; case '-': return l-r;
-    case '*': return l*r; case '/': return l/r;
-    case TK_EQ: return l==r; case TK_NEQ: return l!=r;
-    case TK_AND: return l&&r; case TK_OR: return l||r;
+    case '+': return l + r;
+    case '-': return l - r;
+    case '*': return l * r;
+    case '/': return l / r;
+    case TK_EQ: return l == r;
+    case TK_NEQ: return l != r;
+    case TK_AND: return l && r;
+    case TK_OR: return l || r;
     default: *success = false; return 0;
   }
 }
@@ -156,15 +181,16 @@ static uint32_t eval(int p, int q, bool *success) {
 uint32_t expr(char *e, bool *success) {
   *success = make_token(e);
   if (!*success) return 0;
-  for (int i=0; i<nr_token; i++) {
+
+  for (int i = 0; i < nr_token; i++) {
     if (tokens[i].type == '-') {
-      if (i==0 || tokens[i-1].type == '(' || get_pri(tokens[i-1].type)>=0)
-        tokens[i].type = TK_NEGATIVE;
+      int left = (i == 0) ? '(' : tokens[i-1].type;
+      if (left == '(' || get_pri(left) >= 0) tokens[i].type = TK_NEGATIVE;
     }
     if (tokens[i].type == '*') {
-      if (i==0 || tokens[i-1].type == '(' || get_pri(tokens[i-1].type)>=0)
-        tokens[i].type = TK_DEREF;
+      int left = (i == 0) ? '(' : tokens[i-1].type;
+      if (left == '(' || get_pri(left) >= 0) tokens[i].type = TK_DEREF;
     }
   }
-  return eval(0, nr_token-1, success);
+  return eval(0, nr_token - 1, success);
 }

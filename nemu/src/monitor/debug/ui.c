@@ -8,7 +8,8 @@
 void cpu_exec(uint64_t);
 
 char* rl_gets() {
-  char *line = readline("(nemu) ");
+  static char *line = NULL;
+  line = readline("(nemu) ");
   if (line && *line) add_history(line);
   return line;
 }
@@ -34,22 +35,28 @@ static int cmd_x(char *args) {
   if (!args) return 0;
   char *space = strchr(args, ' ');
   if (!space) return 0;
-  *space = 0;
+  *space = '\0';
   int n = atoi(args);
   bool ok;
   uint32_t addr = expr(space+1, &ok);
-  if (ok) for(int i=0; i<n; i++) {
-    printf("0x%08x: 0x%08x\n", addr, vaddr_read(addr,4));
-    addr +=4;
+  if (ok) {
+    for(int i=0; i<n; i++) {
+      printf("0x%08x: 0x%08x\n", addr, vaddr_read(addr,4));
+      addr += 4;
+    }
   }
   return 0;
 }
 
 static int cmd_p(char *args) {
-  if (!args) return 0;
+  if (!args) { printf("error in expr()\n"); return 0; }
   bool ok;
   uint32_t res = expr(args, &ok);
-  if (ok) printf("the value of expr is: 0x%08x\n", res);
+  if (ok) {
+    printf("the value of expr is: 0x%08x\n", res);
+  } else {
+    printf("error in expr()\n");
+  }
   return 0;
 }
 
@@ -68,7 +75,9 @@ void ui_mainloop(int is_batch_mode) {
     if (!str) continue;
     char *cmd = strtok(str, " ");
     char *arg = strtok(NULL, "");
-    int ret = 0, i;
+    int ret = 0;
+    int i;
+
     for(i=0; i<sizeof(cmd_table)/sizeof(cmd_table[0]); i++) {
       if (!strcmp(cmd, cmd_table[i].name)) {
         ret = cmd_table[i].handler(arg);
@@ -76,5 +85,6 @@ void ui_mainloop(int is_batch_mode) {
       }
     }
     if (ret == -1) break;
+    if (i >= sizeof(cmd_table)/sizeof(cmd_table[0])) printf("Unknown command\n");
   }
 }
