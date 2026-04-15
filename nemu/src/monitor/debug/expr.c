@@ -151,7 +151,7 @@ static int find_dominant_op(int p, int q) {
     else if (t == ')') cnt--;
     if (cnt != 0) continue;
     
-    // 单目运算符优先级最高，直接返回
+    
     if(t == TK_NEGATIVE || t == TK_DEREF || t == '!'){
       return i;
     }
@@ -239,12 +239,12 @@ uint32_t expr(char *e, bool *success) {
     return 0;
   }
 
-  // ✅ 强制修复：连续负号全部标记为单目负号
+  
   for (int i = 0; i < nr_token; i++) {
     if (tokens[i].type == '-') {
       if( i == 0 || 
           tokens[i-1].type == '(' || 
-          get_pri(tokens[i-1].type) != -2)  // 只要前一个是运算符，就标记
+          get_pri(tokens[i-1].type) != -2)  
       {
         tokens[i].type = TK_NEGATIVE;
       }
