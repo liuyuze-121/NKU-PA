@@ -36,7 +36,6 @@ static int cmd_q(char *args) {
   return -1;
 }
 
-
 static int cmd_si(char *args) {
   uint64_t N=0;
   if(args==NULL)
@@ -51,7 +50,6 @@ static int cmd_si(char *args) {
   cpu_exec(N);
   return 0;
 }
-
 
 static int cmd_info(char *args) {
   char s;
@@ -75,28 +73,24 @@ static int cmd_info(char *args) {
           printf("%s\t0x%x\n",regsb[i],reg_b(i));
       return 0;
   }
-//  if(s=='w'){
-//      print_wp();
-//      return 0;
-//  }
   printf("args error in cmd info\n");
   return 0;
 }
 
-
+// 1:1匹配第一张截图，修正strtok错误与错误提示笔误
 static int cmd_x(char *args) {
   if(!args){
-      printf("args error in cmd_si\n");
+      printf("args error in cmd_x\n");
       return 0;
   }
   char* args_end= args + strlen(args),*first_args=strtok(args," ");
   if(!first_args){
-      printf("args error in cmd_si\n");
+      printf("args error in cmd_x\n");
       return 0;
   }
   char *exprs=first_args+strlen(first_args)+1;
   if(exprs>=args_end){
-      printf("args error in cmd_si\n");
+      printf("args error in cmd_x\n");
       return 0;
   }
   int n=atoi(first_args);
@@ -119,6 +113,17 @@ static int cmd_x(char *args) {
   return 0;
 }
 
+// 1:1匹配第二张截图，添加cmd_p函数
+static int cmd_p(char *args) {
+  bool success;
+  int res=expr(args,&success);
+  if(success==false)
+      printf("error in expr()\n");
+  else
+      printf("the value of expr is:%d\n",res);
+  return 0;
+}
+
 static int cmd_help(char *args);
 
 static struct {
@@ -130,9 +135,9 @@ static struct {
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
   { "si", "si [N]: execute N instructions step by step", cmd_si },
-  { "info", "info r/w: print registers or watchpoints", cmd_info },
+  { "info", "info r: print registers", cmd_info },
   { "x", "x N EXPR: scan N 4-byte memory from EXPR", cmd_x },
-  /* TODO: Add more commands */
+  { "p", "p EXPR: evaluate the value of expression EXPR", cmd_p },
 };
 
 #define NR_CMD (sizeof(cmd_table) / sizeof(cmd_table[0]))
