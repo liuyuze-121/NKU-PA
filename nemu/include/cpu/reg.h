@@ -7,6 +7,7 @@ enum { R_EAX, R_ECX, R_EDX, R_EBX, R_ESP, R_EBP, R_ESI, R_EDI };
 enum { R_AX, R_CX, R_DX, R_BX, R_SP, R_BP, R_SI, R_DI };
 enum { R_AL, R_CL, R_DL, R_BL, R_AH, R_CH, R_DH, R_BH };
 
+/* 完全匹配截图的寄存器结构体，匿名union实现i386寄存器内存重叠 */
 typedef struct {
   union {
     union {
@@ -14,9 +15,16 @@ typedef struct {
       uint16_t _16;
       uint8_t _8[2];
     } gpr[8];
-    rtlreg_t eax, ecx, edx, ebx, esp, ebp, esi, edi;
+
+    /* Do NOT change the order of the GPRs' definitions. */
+    /* 与gpr[0]-gpr[7]一一对应，共享同一块内存空间 */
+    struct {
+      rtlreg_t eax, ecx, edx, ebx, esp, ebp, esi, edi;
+    };
   };
+
   vaddr_t eip;
+
 } CPU_state;
 
 extern CPU_state cpu;
@@ -28,7 +36,7 @@ static inline int check_reg_index(int index) {
 
 #define reg_l(index) (cpu.gpr[check_reg_index(index)]._32)
 #define reg_w(index) (cpu.gpr[check_reg_index(index)]._16)
-#define reg_b(index) (cpu.gpr[(index) >> 2]._8[(index) & 1])
+#define reg_b(index) (cpu.gpr[check_reg_index(index) & 0x3]._8[index >> 2])
 
 extern const char* regsl[];
 extern const char* regsw[];

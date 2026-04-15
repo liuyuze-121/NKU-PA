@@ -38,20 +38,6 @@ static int cmd_q(char *args) {
 
 static int cmd_help(char *args);
 
-// ===================== 本次仅实现：si 单步命令 =====================
-static int cmd_si(char *args) {
-  // 默认单步执行1条指令
-  uint64_t step = 1;
-  if (args != NULL) {
-    // 如果传入参数，执行指定步数
-    step = strtoull(args, NULL, 10);
-  }
-  // 执行N条指令
-  cpu_exec(step);
-  return 0;
-}
-// ===================================================================
-
 static struct {
   char *name;
   char *description;
@@ -60,9 +46,6 @@ static struct {
   { "help", "Display informations about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
-  // ===================== 仅注册 si 命令 =====================
-  { "si", "Single step execution: si [N]", cmd_si },
-  // ==========================================================
 
   /* TODO: Add more commands */
 
