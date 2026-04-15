@@ -36,6 +36,89 @@ static int cmd_q(char *args) {
   return -1;
 }
 
+
+static int cmd_si(char *args) {
+  uint64_t N=0;
+  if(args==NULL)
+      N=1;
+  else{
+      int nRet=sscanf(args,"%llu",&N);
+      if(nRet<=0){
+          printf("args error in cmd_si\n");
+          return 0;
+      }
+  }
+  cpu_exec(N);
+  return 0;
+}
+
+
+static int cmd_info(char *args) {
+  char s;
+  if(args==NULL){
+      printf("args error in cmd_info\n");
+      return 0;
+  }
+  int nRet=sscanf(args,"%c",&s);
+  if(nRet<=0){
+      printf("args error in cmd_info\n");
+      return 0;
+  }
+  if(s=='r'){
+      int i;
+      for(i=0;i<8;i++)
+          printf("%s\t0x%x\n",regsl[i],reg_l(i));
+      printf("eip\t0x%x\n",cpu.eip);
+      for(i=0;i<8;i++)
+          printf("%s\t0x%x\n",regsw[i],reg_w(i));
+      for(i=0;i<8;i++)
+          printf("%s\t0x%x\n",regsb[i],reg_b(i));
+      return 0;
+  }
+//  if(s=='w'){
+//      print_wp();
+//      return 0;
+//  }
+  printf("args error in cmd info\n");
+  return 0;
+}
+
+
+static int cmd_x(char *args) {
+  if(!args){
+      printf("args error in cmd_si\n");
+      return 0;
+  }
+  char* args_end= args + strlen(args),*first_args=strtok(args," ");
+  if(!first_args){
+      printf("args error in cmd_si\n");
+      return 0;
+  }
+  char *exprs=first_args+strlen(first_args)+1;
+  if(exprs>=args_end){
+      printf("args error in cmd_si\n");
+      return 0;
+  }
+  int n=atoi(first_args);
+  bool success;
+  vaddr_t addr=expr(exprs,&success);
+  if(success==false)
+      printf("error in expr()\n");
+  printf("Memory:");
+  printf("\n");
+  for(int i=0;i<n;i++){
+      printf("0x%x:",addr);
+      uint32_t val=vaddr_read(addr,4);
+      uint8_t *by =(uint8_t *)&val;
+      printf("0x");
+      for(int j=3;j>=0;j--)
+          printf("%02x",by[j]);
+      printf("\n");
+      addr+=4;
+  }
+  return 0;
+}
+
 static int cmd_help(char *args);
 
 static struct {
@@ -46,9 +129,10 @@ static struct {
   { "help", "Display informations about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
-
+  { "si", "si [N]: execute N instructions step by step", cmd_si },
+  { "info", "info r/w: print registers or watchpoints", cmd_info },
+  { "x", "x N EXPR: scan N 4-byte memory from EXPR", cmd_x },
   /* TODO: Add more commands */
-
 };
 
 #define NR_CMD (sizeof(cmd_table) / sizeof(cmd_table[0]))
