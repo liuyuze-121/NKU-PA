@@ -199,9 +199,10 @@ static uint32_t eval(int p, int q, bool *success) {
     return 0;
   }
   int t = tokens[op].type;
+
   if (t == TK_NEGATIVE) {
     uint32_t v = eval(op + 1, q, success);
-    return -v;
+    return 0 - v;
   }
   if (t == TK_DEREF) {
     uint32_t addr = eval(op + 1, q, success);
@@ -211,6 +212,7 @@ static uint32_t eval(int p, int q, bool *success) {
     uint32_t v = eval(op + 1, q, success);
     return !v;
   }
+
   uint32_t l = eval(p, op - 1, success);
   uint32_t r = eval(op + 1, q, success);
   switch (t) {
@@ -232,20 +234,21 @@ uint32_t expr(char *e, bool *success) {
     *success = false;
     return 0;
   }
-  int i;
-  for (i = 0; i < nr_token; i++) {
-    int t = tokens[i].type;
-    // 修复：支持连续负号、括号后负号
-    if (t == '-') {
+
+  // 终极修复：强制标记所有连续单目负号/解引用
+  for (int i = 0; i < nr_token; i++) {
+    if (tokens[i].type == '-') {
+      // 表达式开头 / 左括号 / 前一个是运算符 → 必为单目负号
       if (i == 0 || tokens[i-1].type == '(' || get_pri(tokens[i-1].type) >= 0) {
         tokens[i].type = TK_NEGATIVE;
       }
     }
-    if (t == '*') {
+    if (tokens[i].type == '*') {
       if (i == 0 || tokens[i-1].type == '(' || get_pri(tokens[i-1].type) >= 0) {
         tokens[i].type = TK_DEREF;
       }
     }
   }
+
   return eval(0, nr_token - 1, success);
 }
