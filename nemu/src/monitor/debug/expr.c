@@ -117,10 +117,8 @@ static bool check_parentheses(int p, int q) {
   int i;
   for (i = p; i <= q; i++) {
     if (tokens[i].type == '(') cnt++;
-    else if (tokens[i].type == ')') {
-      cnt--;
-      if (cnt < 0) return false;
-    }
+    else if (tokens[i].type == ')') cnt--;
+    if (cnt < 0) return false;
   }
   return cnt == 0;
 }
@@ -152,6 +150,12 @@ static int find_dominant_op(int p, int q) {
     if (t == '(') cnt++;
     else if (t == ')') cnt--;
     if (cnt != 0) continue;
+    
+    // 单目运算符优先级最高，直接返回
+    if(t == TK_NEGATIVE || t == TK_DEREF || t == '!'){
+      return i;
+    }
+
     int cp = get_pri(t);
     if (cp < 0) continue;
     if (cp <= pri) {
@@ -235,16 +239,18 @@ uint32_t expr(char *e, bool *success) {
     return 0;
   }
 
-  // 终极修复：强制标记所有连续单目负号/解引用
+  // ✅ 强制修复：连续负号全部标记为单目负号
   for (int i = 0; i < nr_token; i++) {
     if (tokens[i].type == '-') {
-      // 表达式开头 / 左括号 / 前一个是运算符 → 必为单目负号
-      if (i == 0 || tokens[i-1].type == '(' || get_pri(tokens[i-1].type) >= 0) {
+      if( i == 0 || 
+          tokens[i-1].type == '(' || 
+          get_pri(tokens[i-1].type) != -2)  // 只要前一个是运算符，就标记
+      {
         tokens[i].type = TK_NEGATIVE;
       }
     }
     if (tokens[i].type == '*') {
-      if (i == 0 || tokens[i-1].type == '(' || get_pri(tokens[i-1].type) >= 0) {
+      if( i == 0 || tokens[i-1].type == '(' || get_pri(tokens[i-1].type) != -2){
         tokens[i].type = TK_DEREF;
       }
     }
