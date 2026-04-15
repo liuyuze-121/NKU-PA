@@ -9,12 +9,10 @@ enum { R_AL, R_CL, R_DL, R_BL, R_AH, R_CH, R_DH, R_BH };
 
 typedef struct {
   union {
-    struct {
-      union {
-        uint32_t _32;
-        uint16_t _16;
-        uint8_t _8[2];
-      };
+    union {
+      uint32_t _32;
+      uint16_t _16;
+      uint8_t _8[2];
     } gpr[8];
 
     struct {
@@ -32,9 +30,9 @@ static inline int check_reg_index(int index) {
   return index;
 }
 
-#define reg_l(index) (cpu.gpr[check_reg_index(index)]._32)
-#define reg_w(index) (cpu.gpr[check_reg_index(index)]._16)
-#define reg_b(index) (cpu.gpr[check_reg_index(index) & 0x03]._8[index >> 2])
+#define reg_l(index)   (cpu.gpr[check_reg_index(index)]._32)
+#define reg_w(index)   (cpu.gpr[check_reg_index(index)]._16)
+#define reg_b(index)   (cpu.gpr[check_reg_index(index)]._8[index & 1])
 
 extern const char* regsl[];
 extern const char* regsw[];
